@@ -1,0 +1,7 @@
+[package]
+name = "neovim-tail"
+version = "0.1.0"
+authors = ["Thomas Bonk <tbo@cybo.biz>"]
+
+[dependencies]
+neovim-lib = "0.5.4"
