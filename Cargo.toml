@@ -5,3 +5,4 @@ authors = ["Thomas Bonk <tbo@cybo.biz>"]
 
 [dependencies]
 neovim-lib  = { git = "https://github.com/daa84/neovim-lib" }
+regex = "1"
