@@ -1,23 +1,38 @@
 extern crate neovim_lib;
 extern crate regex;
-use neovim_lib::{Neovim, NeovimApi, Session};
+use neovim_lib::{Neovim, NeovimApi, Session, Handler};
 use std::io::{self, BufRead};
 use regex::Regex;
+
+// struct EventHandler;
+// impl Handler for EventHandler {
+//     fn handle_notify(&mut self, _name: &str, _args: Vec<String>) {
+//     }
+//     // fn handle_request(&mut self, name: &str, args: Vec<String>) { 
+//     //     Ok("Hello")
+//     // } 
+// }
 
 fn main() {
     let re = Regex::new(r"\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]").unwrap();
     let mut session = Session::new_unix_socket(env!("NVIM_LISTEN_ADDRESS")).unwrap();
+    // session.start_event_loop_channel_handler(EventHandler);
     session.start_event_loop();
     let mut nvim = Neovim::new(session);
-    nvim.command("call DWM_New() | setlocal buftype=log nobuflisted noswapfile readonly modifiable").unwrap();
+    nvim.command("call DWM_New() | setlocal signcolumn=no nonumber norelativenumber filetype=log noswapfile readonly modifiable").unwrap();
     let current_buffer = nvim.get_current_buf().unwrap();
+    let current_window = nvim.get_current_win().unwrap();
+    nvim.subscribe("nvim_buf_detach_event").unwrap();
     let stdin = io::stdin();
+    let mut pos = 0;
     for line in stdin.lock().lines() {
-        // nvim.command("setlocal modifiable").unwrap();
+        nvim.command("setlocal modifiable").unwrap();
         let line = line.expect("Could not read line from standard in");
         let text = re.replace_all(&line, "");
-        current_buffer.set_lines(&mut nvim, -1, -1, true, vec![text.to_string()]).unwrap();
-        // nvim.command("setlocal nomodifiable").unwrap();
+        current_buffer.set_lines(&mut nvim, pos, -1, true, vec![text.to_string()]).unwrap();
+        current_window.set_cursor(&mut nvim, (pos + 1, 1)).unwrap();
+        pos += 1;
+        nvim.command("setlocal nomodifiable").unwrap();
     }
     
     // loop {
