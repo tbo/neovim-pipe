@@ -6,3 +6,7 @@ authors = ["Thomas Bonk <tbo@cybo.biz>"]
 [dependencies]
 neovim-lib  = { git = "https://github.com/daa84/neovim-lib" }
 regex = "1"
+tokio-stdin-stdout = "0.1.5"
+tokio = "0.1.16"
+tokio-codec = "0.1.1"
+tokio-batch = "0.2.0"
