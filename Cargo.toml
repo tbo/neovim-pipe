@@ -4,9 +4,11 @@ version = "0.1.0"
 authors = ["Thomas Bonk <tbo@cybo.biz>"]
 
 [dependencies]
-neovim-lib  = { git = "https://github.com/daa84/neovim-lib" }
+neovim-lib  = "0.6.0"
 regex = "1"
 tokio-stdin-stdout = "0.1.5"
 tokio = "0.1.16"
 tokio-codec = "0.1.1"
 tokio-batch = "0.2.0"
+chrono = "0.4.6"
+futures = "0.1.25"
