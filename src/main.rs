@@ -8,15 +8,12 @@ extern crate chrono;
 extern crate futures;
 
 use regex::Regex;
-use std::process;
 use std::time::{Duration, Instant};
-use neovim_lib::{Neovim, NeovimApi, Session, Value, RequestHandler, Handler};
-use tokio::runtime::Runtime;
+use neovim_lib::{Neovim, NeovimApi, Session, Value};
 use tokio::prelude::{Stream};
 use tokio_codec::{FramedRead, LinesCodec};
 use tokio_batch::*;
 use chrono::prelude::*;
-use futures::Future;
 
 fn get_current_datetime() -> String {
     Local::now().format("%Y-%m-%d %H:%M:%S").to_string()
@@ -28,33 +25,10 @@ fn get_separator() -> std::vec::Vec<String> {
 
 const SCROLL_BACK: i64 = 10000;
 
-// struct NeovimHandler();
-//
-// impl RequestHandler for NeovimHandler {
-//     fn handle_request(&mut self, name: &str, _args: Vec<Value>) -> Result<Value, Value> {
-//         println!("This happend: {}", name);
-//         // process::exit(0x0100);
-//         Ok(Value::Boolean(true))
-//     }
-// }
-//
-// impl Handler for NeovimHandler {
-//     fn handle_notify(&mut self, name: &str, _args: Vec<Value>) {
-//         if let "nvim_buf_detach_event" = name {
-//             println!("it worked!");
-//             process::exit(0);
-//             // process::abort();
-//             // panic!();
-//         }
-//     }
-// }
-
 fn main() {
     let re = Regex::new(r"^.*\r|\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]").unwrap();
     let mut session = Session::new_unix_socket(env!("NVIM_LISTEN_ADDRESS")).unwrap();
-    let receiver = session.start_event_loop_channel();
-    // session.start_event_loop_handler(NeovimHandler());
-    // session.start_event_loop_channel_handler(NeovimHandler());
+    session.start_event_loop_channel();
     let mut nvim = Neovim::new(session);
     nvim.command("call DWM_New() | setlocal signcolumn=no nonumber norelativenumber filetype=log noswapfile readonly").unwrap();
     let current_buffer = nvim.get_current_buf().unwrap();
@@ -65,9 +39,6 @@ fn main() {
     });
     let batched_framed_stdin  = Chunks::new(framed_stdin, 2500, Duration::new(0, 320000));
     let mut last_update = Instant::now();
-    current_buffer.attach(&mut nvim, true, vec![]).unwrap();
-    nvim.subscribe("mut cursor-moved").unwrap();
-    nvim.subscribe("insert-enter").expect("error: cannot subscribe to event: insert-enter");
     let future = batched_framed_stdin
         .map(move |lines| {
             if last_update.elapsed() > Duration::from_secs(10) { 
@@ -90,37 +61,6 @@ fn main() {
             if cursor_position >= pos {
                 current_window.set_cursor(&mut nvim, (new_position, 1)).unwrap();
             }
-            // current_buffer.set_option(&mut nvim, "modifiable", Value::Boolean(false)).unwrap();
-            // Ok(tokio_batch::Error(()))
-            // Err(())
         }).collect();
-    // tokio::run(future.then(|res| {
-    //     // match res {
-    //     //     Err(_) => assert!(false),
-    //     //     Ok(v) => assert_eq!(vec![vec![5]], v),
-    //     // };
-    //     Ok(())
-    // }));
-    // tokio::run(future);
-    // tokio::run(future);
-    // tokio::executor::current_thread::block_on_all(future);
-    // tokio::executor::current_thread::block_on_all(future).unwrap();
     tokio::runtime::current_thread::Runtime::new().unwrap().block_on(future).unwrap();
-    // process::exit(0);
-    //
-    // let mut rt = Runtime::new().unwrap();
-    // fn stop() {
-    //     rt.shutdown_now().map(|_| process::exit(0));
-    // }
-    // rt.spawn(future);
-    // for (event, values) in receiver {
-    //     println!("Something happend?: {}", event);
-    //     if "nvim_buf_detach_event" == event {
-    //         // println!("I'm supposed to shutdown now");
-    //         // rt.shutdown_now().wait().unwrap();
-    //         // stop();
-    //         // process::abort();
-    //         process::exit(0);
-    //     }
-    // }
 }
